@@ -1,0 +1,2562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>SADG — Multi App Cloner | Run Multiple Accounts Simultaneously</title>
+  <meta name="description" content="SADG lets you clone WhatsApp, Instagram, TikTok, games, and 2000+ apps on one device — install directly from Chrome, no APK needed.">
+  
+  <!-- Open Graph & Social Sharing -->
+  <meta property="og:title" content="SADG — Multi App Cloner">
+  <meta property="og:description" content="Run multiple instances of any app simultaneously on one device directly from your browser. 100% isolated data.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sadg-cloner.vercel.app">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SADG — Multi App Cloner">
+  <meta name="twitter:description" content="Run multiple instances of any app on one device with zero APK and 100% isolated data.">
+
+  <!-- PWA Manifest & App Configuration -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#7c3aed">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SADG">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="icon" type="image/png" href="/icons/icon-192.png">
+
+  <!-- Google Fonts: Inter & Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       CSS VARIABLES & GLOBAL RESET
+       ========================================================================== */
+    :root {
+      --bg: #0a0a0f;
+      --bg-surface: #11111a;
+      --bg-surface-elevated: #171724;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(147, 51, 234, 0.35);
+      
+      --primary: #7c3aed;
+      --primary-light: #9061f9;
+      --primary-glow: rgba(124, 58, 237, 0.4);
+      --secondary: #6366f1;
+      --accent-cyan: #38bdf8;
+      --accent-emerald: #10b981;
+      --accent-rose: #f43f5e;
+      
+      --text: #f9fafb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      --radius-full: 9999px;
+
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-heading: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-normal: 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient animated background canvas */
+    .ambient-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .ambient-orb-1 {
+      position: absolute;
+      top: -15%;
+      left: 10%;
+      width: 550px;
+      height: 550px;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.22) 0%, rgba(99, 102, 241, 0.05) 55%, transparent 75%);
+      filter: blur(80px);
+      border-radius: 50%;
+      transform: translateZ(0);
+      animation: floatOrb 18s ease-in-out infinite alternate;
+    }
+
+    .ambient-orb-2 {
+      position: absolute;
+      top: 40%;
+      right: -10%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, rgba(56, 189, 248, 0.04) 55%, transparent 75%);
+      filter: blur(90px);
+      border-radius: 50%;
+      transform: translateZ(0);
+      animation: floatOrb2 22s ease-in-out infinite alternate;
+    }
+
+    @keyframes floatOrb {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, 70px) scale(1.12); }
+    }
+
+    @keyframes floatOrb2 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-60px, -50px) scale(1.08); }
+    }
+
+    /* ==========================================================================
+       CONTAINERS & LAYOUT
+       ========================================================================== */
+    .container {
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Section layout */
+    section {
+      padding: 96px 0;
+      position: relative;
+    }
+
+    @media (max-width: 768px) {
+      section {
+        padding: 64px 0;
+      }
+    }
+
+    /* Section Header */
+    .section-header {
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto 56px;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      background: rgba(124, 58, 237, 0.12);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      color: #c084fc;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .badge-pill svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: 38px;
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      color: #ffffff;
+    }
+
+    .section-desc {
+      font-size: 17px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 768px) {
+      .section-title {
+        font-size: 28px;
+      }
+      .section-desc {
+        font-size: 15px;
+      }
+    }
+
+    /* Reveal animations using IntersectionObserver */
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1), transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .reveal-on-scroll.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ==========================================================================
+       BUTTONS & MICRO-INTERACTIONS
+       ========================================================================== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 26px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform var(--transition-fast), filter var(--transition-fast), background-color var(--transition-fast);
+      white-space: nowrap;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 20px var(--primary-glow);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 6px 26px rgba(124, 58, 237, 0.6);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: #f3f4f6;
+      border: 1px solid var(--border-subtle);
+      backdrop-filter: blur(10px);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .btn-sm {
+      padding: 8px 16px;
+      font-size: 13px;
+      border-radius: 10px;
+    }
+
+    /* ==========================================================================
+       STICKY GLASSMORPHISM NAVBAR
+       ========================================================================== */
+    .navbar {
+      position: sticky;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(10, 10, 15, 0.78);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      transition: border-color var(--transition-normal);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 72px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-icon-svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    .logo-text-gradient {
+      background: linear-gradient(135deg, #c084fc 0%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color var(--transition-fast);
+    }
+
+    .nav-links a:hover {
+      color: #ffffff;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+      .nav-inner {
+        height: 64px;
+      }
+    }
+
+    /* ==========================================================================
+       HERO SECTION
+       ========================================================================== */
+    .hero-section {
+      padding: 72px 0 96px;
+      overflow: hidden;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 56px;
+      align-items: center;
+    }
+
+    @media (max-width: 960px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 48px;
+      }
+    }
+
+    .hero-tagline-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(124, 58, 237, 0.15);
+      border: 1px solid rgba(124, 58, 237, 0.4);
+      border-radius: var(--radius-full);
+      font-size: 13px;
+      font-weight: 600;
+      color: #c084fc;
+      margin-bottom: 20px;
+    }
+
+    .hero-headline {
+      font-family: var(--font-heading);
+      font-size: 52px;
+      font-weight: 800;
+      line-height: 1.14;
+      letter-spacing: -0.03em;
+      margin-bottom: 22px;
+      color: #ffffff;
+    }
+
+    .hero-headline span.gradient {
+      background: linear-gradient(135deg, #c084fc 0%, #818cf8 50%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtext {
+      font-size: 18px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 36px;
+      max-width: 580px;
+    }
+
+    @media (max-width: 960px) {
+      .hero-subtext {
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .hero-headline {
+        font-size: 34px;
+      }
+      .hero-subtext {
+        font-size: 16px;
+      }
+    }
+
+    .hero-cta-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 960px) {
+      .hero-cta-group {
+        justify-content: center;
+      }
+    }
+
+    .hero-badges-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-top: 36px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 960px) {
+      .hero-badges-row {
+        justify-content: center;
+      }
+    }
+
+    .hero-badge-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hero-badge-item svg {
+      width: 16px;
+      height: 16px;
+      color: var(--accent-emerald);
+    }
+
+    /* ==========================================================================
+       PURE CSS FLOATING PHONE MOCKUP WITH CLONED APPS
+       ========================================================================== */
+    .mockup-wrapper {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .phone-device {
+      position: relative;
+      width: 290px;
+      height: 570px;
+      background: #0d0d15;
+      border: 6px solid #232332;
+      border-radius: 44px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), 0 0 40px rgba(124, 58, 237, 0.25);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: translateZ(0);
+      will-change: transform;
+      animation: phoneHover 6s ease-in-out infinite;
+    }
+
+    @keyframes phoneHover {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-12px) rotate(0.8deg); }
+    }
+
+    /* Phone speaker & notch */
+    .phone-notch {
+      width: 100px;
+      height: 20px;
+      background: #000000;
+      margin: 0 auto 10px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .notch-camera {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #181828;
+    }
+
+    .notch-sensor {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #2b2b40;
+    }
+
+    /* Screen display inside phone */
+    .phone-screen {
+      flex: 1;
+      background: linear-gradient(180deg, #12121d 0%, #0d0d15 100%);
+      border-radius: 32px;
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Phone status bar */
+    .screen-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #9ca3af;
+      font-weight: 600;
+      margin-bottom: 14px;
+      padding: 0 4px;
+    }
+
+    /* SADG Header in phone */
+    .screen-app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding: 4px;
+    }
+
+    .screen-app-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .screen-status-badge {
+      font-size: 10px;
+      padding: 2px 7px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    /* Cloned Apps Grid in Phone */
+    .screen-clones-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .screen-app-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 5px;
+    }
+
+    .screen-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Badge on cloned icons */
+    .clone-tag {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: #7c3aed;
+      color: #ffffff;
+      font-size: 8px;
+      font-weight: 800;
+      padding: 2px 4px;
+      border-radius: 6px;
+      border: 1.5px solid #0d0d15;
+      text-transform: uppercase;
+      box-shadow: 0 2px 6px rgba(124, 58, 237, 0.6);
+    }
+
+    .clone-tag.sec {
+      background: #2563eb;
+    }
+
+    .screen-icon-box.whatsapp { background: linear-gradient(135deg, #25D366, #128C7E); }
+    .screen-icon-box.instagram { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+    .screen-icon-box.tiktok { background: linear-gradient(135deg, #000000, #111111); border: 1px solid #00f2fe; }
+    .screen-icon-box.pubg { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .screen-icon-box.telegram { background: linear-gradient(135deg, #2AABEE, #229ED9); }
+    .screen-icon-box.x-app { background: linear-gradient(135deg, #1e1e24, #000000); border: 1px solid rgba(255,255,255,0.2); }
+
+    .screen-app-name {
+      font-size: 10px;
+      color: #d1d5db;
+      font-weight: 500;
+    }
+
+    /* Running Split Sandbox Card */
+    .screen-split-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      border-radius: 14px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .split-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      color: #c084fc;
+      font-weight: 600;
+    }
+
+    .split-instances {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .split-instance-box {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 8px 6px;
+      text-align: center;
+      font-size: 10px;
+    }
+
+    .split-instance-box.active {
+      border-color: rgba(124, 58, 237, 0.6);
+      background: rgba(124, 58, 237, 0.12);
+    }
+
+    .split-instance-title {
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 2px;
+    }
+
+    .split-instance-status {
+      font-size: 8px;
+      color: #10b981;
+    }
+
+    /* Floating Satellite Badges around phone */
+    .floating-card-badge {
+      position: absolute;
+      background: rgba(17, 17, 26, 0.85);
+      border: 1px solid rgba(124, 58, 237, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 14px;
+      padding: 10px 14px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 2;
+      animation: floatBadge 5s ease-in-out infinite alternate;
+      will-change: transform;
+    }
+
+    .floating-badge-1 {
+      top: 15%;
+      left: -40px;
+      animation-delay: 0.5s;
+    }
+
+    .floating-badge-2 {
+      bottom: 20%;
+      right: -35px;
+      animation-delay: 1.5s;
+    }
+
+    @keyframes floatBadge {
+      0% { transform: translateY(0px); }
+      100% { transform: translateY(-10px); }
+    }
+
+    @media (max-width: 640px) {
+      .floating-badge-1 {
+        left: -10px;
+        top: 8%;
+      }
+      .floating-badge-2 {
+        right: -10px;
+        bottom: 12%;
+      }
+    }
+
+    .floating-icon-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #7c3aed, #6366f1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+    }
+
+    .floating-text-main {
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .floating-text-sub {
+      font-size: 10px;
+      color: #9ca3af;
+    }
+
+    /* ==========================================================================
+       STATS BAR SECTION
+       ========================================================================== */
+    .stats-section {
+      padding: 40px 0;
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(17, 17, 26, 0.4);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 28px;
+      }
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .stat-number {
+      font-family: var(--font-heading);
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 0%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    /* ==========================================================================
+       INTERACTIVE CLONER SANDBOX DEMO (FEATURE ENHANCEMENT)
+       ========================================================================== */
+    .sandbox-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      margin-top: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @media (max-width: 640px) {
+      .sandbox-container {
+        padding: 20px;
+      }
+    }
+
+    .sandbox-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 24px;
+    }
+
+    .sandbox-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sandbox-pill-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 4px 10px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      border-radius: var(--radius-full);
+      font-weight: 600;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulseGreen 2s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .cloner-app-selector {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      scrollbar-width: thin;
+    }
+
+    .clone-chip-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .clone-chip-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+
+    .clone-chip-btn.active {
+      background: rgba(124, 58, 237, 0.18);
+      border-color: rgba(124, 58, 237, 0.6);
+      color: #ffffff;
+    }
+
+    .sandbox-dual-view {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .sandbox-dual-view {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .instance-card {
+      background: rgba(10, 10, 15, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+    }
+
+    .instance-card.clone {
+      border-color: rgba(124, 58, 237, 0.4);
+      background: linear-gradient(180deg, rgba(124, 58, 237, 0.06) 0%, rgba(10, 10, 15, 0.7) 100%);
+    }
+
+    .instance-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .instance-label {
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .storage-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-secondary);
+      font-family: monospace;
+    }
+
+    .instance-body {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .param-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+
+    .param-key {
+      color: var(--text-muted);
+    }
+
+    .param-val {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .param-val.secure {
+      color: #34d399;
+    }
+
+    /* ==========================================================================
+       FEATURES SECTION
+       ========================================================================== */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+    }
+
+    @media (max-width: 960px) {
+      .features-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+    }
+
+    .feature-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 36px 28px;
+      display: flex;
+      flex-direction: column;
+      transition: transform var(--transition-normal), border-color var(--transition-normal);
+      position: relative;
+      overflow: hidden;
+      will-change: transform;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(147, 51, 234, 0.45);
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #7c3aed, transparent);
+      opacity: 0;
+      transition: opacity var(--transition-normal);
+    }
+
+    .feature-card:hover::before {
+      opacity: 1;
+    }
+
+    .feature-icon-box {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-md);
+      background: rgba(124, 58, 237, 0.12);
+      border: 1px solid rgba(124, 58, 237, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      color: #c084fc;
+    }
+
+    .feature-icon-box svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .feature-title {
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    .feature-desc {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    /* ==========================================================================
+       HOW IT WORKS SECTION
+       ========================================================================== */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      position: relative;
+    }
+
+    @media (max-width: 860px) {
+      .steps-grid {
+        grid-template-columns: 1fr;
+        gap: 36px;
+      }
+    }
+
+    .step-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 36px 28px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: transform var(--transition-normal);
+      will-change: transform;
+    }
+
+    .step-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .step-number-circle {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+      color: #ffffff;
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 18px rgba(124, 58, 237, 0.4);
+    }
+
+    .step-title {
+      font-family: var(--font-heading);
+      font-size: 19px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 10px;
+    }
+
+    .step-desc {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* ==========================================================================
+       FAQ ACCORDION SECTION
+       ========================================================================== */
+    .faq-container {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .faq-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: border-color var(--transition-fast);
+    }
+
+    .faq-item.active {
+      border-color: rgba(147, 51, 234, 0.4);
+    }
+
+    .faq-question {
+      width: 100%;
+      padding: 22px 24px;
+      background: none;
+      border: none;
+      color: #ffffff;
+      font-family: var(--font-body);
+      font-size: 16px;
+      font-weight: 600;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: color var(--transition-fast);
+    }
+
+    .faq-question:hover {
+      color: #c084fc;
+    }
+
+    .faq-icon-toggle {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      transition: transform 300ms ease;
+    }
+
+    .faq-item.active .faq-icon-toggle {
+      transform: rotate(180deg);
+      color: #c084fc;
+    }
+
+    /* Accordion animation using max-height + opacity transition (300ms ease) */
+    .faq-answer {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: max-height 300ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: max-height, opacity;
+    }
+
+    .faq-item.active .faq-answer {
+      max-height: 300px;
+      opacity: 1;
+    }
+
+    .faq-answer-inner {
+      padding: 0 24px 22px;
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    /* ==========================================================================
+       INSTALL CTA SECTION
+       ========================================================================== */
+    .cta-box {
+      background: radial-gradient(circle at top right, rgba(124, 58, 237, 0.25) 0%, rgba(17, 17, 26, 0.95) 60%), #11111a;
+      border: 1px solid rgba(147, 51, 234, 0.4);
+      border-radius: var(--radius-xl);
+      padding: 64px 36px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    }
+
+    @media (max-width: 640px) {
+      .cta-box {
+        padding: 44px 20px;
+      }
+    }
+
+    .cta-title {
+      font-family: var(--font-heading);
+      font-size: 40px;
+      font-weight: 800;
+      margin-bottom: 16px;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    @media (max-width: 640px) {
+      .cta-title {
+        font-size: 28px;
+      }
+    }
+
+    .cta-subtext {
+      font-size: 17px;
+      color: var(--text-secondary);
+      max-width: 580px;
+      margin: 0 auto 36px;
+    }
+
+    .cta-button-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    /* Dynamic Install States */
+    .install-state-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 24px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: var(--radius-md);
+      color: #34d399;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .ios-install-hint {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #cbd5e1;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .ios-install-hint svg {
+      width: 16px;
+      height: 16px;
+      color: #38bdf8;
+    }
+
+    /* ==========================================================================
+       FOOTER
+       ========================================================================== */
+    .site-footer {
+      border-top: 1px solid var(--border-subtle);
+      background: #07070b;
+      padding: 64px 0 32px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .footer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 36px;
+      margin-bottom: 48px;
+    }
+
+    .footer-brand {
+      max-width: 320px;
+    }
+
+    .footer-brand p {
+      margin-top: 12px;
+      line-height: 1.6;
+    }
+
+    .footer-links-group {
+      display: flex;
+      gap: 48px;
+    }
+
+    @media (max-width: 640px) {
+      .footer-links-group {
+        width: 100%;
+        justify-content: space-between;
+        gap: 20px;
+      }
+    }
+
+    .footer-col h4 {
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .footer-col a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+
+    .footer-col a:hover {
+      color: #c084fc;
+    }
+
+    .footer-bottom {
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 13px;
+    }
+
+    /* ==========================================================================
+       BACK TO TOP FLOATING BUTTON
+       ========================================================================== */
+    .back-to-top {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: var(--bg-surface-elevated);
+      border: 1px solid rgba(124, 58, 237, 0.4);
+      color: #c084fc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(16px);
+      transition: opacity var(--transition-normal), transform var(--transition-normal), background-color var(--transition-fast);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      z-index: 99;
+      will-change: transform, opacity;
+    }
+
+    .back-to-top.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .back-to-top:hover {
+      background: #7c3aed;
+      color: #ffffff;
+    }
+
+    .back-to-top:active {
+      transform: scale(0.92);
+    }
+
+    /* Modal for iOS Guide or Standalone info */
+    .ios-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .ios-modal-backdrop.show {
+      display: flex;
+    }
+
+    .ios-modal-box {
+      background: #151522;
+      border: 1px solid rgba(124, 58, 237, 0.4);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+    }
+
+    .ios-modal-box h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #ffffff;
+    }
+
+    .ios-modal-box p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .ios-step-guide {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      margin-bottom: 24px;
+      text-align: left;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ios-step-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Animated Lighting -->
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="ambient-orb-1"></div>
+    <div class="ambient-orb-2"></div>
+  </div>
+
+  <!-- Sticky Glassmorphism Navbar -->
+  <header class="navbar" id="navbar">
+    <div class="container nav-inner">
+      <a href="#" class="logo" aria-label="SADG Homepage">
+        <svg class="logo-icon-svg" viewBox="0 0 32 32" fill="none">
+          <rect x="2" y="2" width="18" height="18" rx="5" fill="#7c3aed" fill-opacity="0.9" />
+          <rect x="12" y="12" width="18" height="18" rx="5" fill="#6366f1" fill-opacity="0.95" stroke="#c084fc" stroke-width="1.5" />
+        </svg>
+        <span>SADG<span class="logo-text-gradient">.app</span></span>
+      </a>
+
+      <nav aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><a href="#features">Features</a></li>
+          <li><a href="#sandbox">Live Demo</a></li>
+          <li><a href="#how-it-works">How It Works</a></li>
+          <li><a href="#stats">Stats</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <!-- Dynamic Navigation Install Action -->
+        <button id="navInstallBtn" class="btn btn-primary btn-sm install-trigger-btn" aria-label="Install SADG App">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Install SADG</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- =======================================================================
+         1. HERO SECTION
+         ======================================================================= -->
+    <section class="hero-section" id="hero">
+      <div class="container hero-grid">
+        <!-- Hero Text & CTA -->
+        <div class="hero-content reveal-on-scroll is-visible">
+          <div class="hero-tagline-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+            Next-Gen Progressive Web App
+          </div>
+
+          <h1 class="hero-headline">
+            Run Multiple Accounts. <br>
+            One Device. <br>
+            <span class="gradient">Zero Hassle.</span>
+          </h1>
+
+          <p class="hero-subtext">
+            SADG lets you clone WhatsApp, Instagram, TikTok, games, and 2000+ apps — install directly from Chrome, no APK needed.
+          </p>
+
+          <div class="hero-cta-group">
+            <button id="heroInstallBtn" class="btn btn-primary install-trigger-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Install SADG</span>
+            </button>
+
+            <a href="#how-it-works" class="btn btn-secondary">
+              <span>How It Works</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </a>
+          </div>
+
+          <!-- Trust Badges -->
+          <div class="hero-badges-row">
+            <div class="hero-badge-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>No APK / No Root</span>
+            </div>
+            <div class="hero-badge-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>100% Isolated Data</span>
+            </div>
+            <div class="hero-badge-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Instant Chrome Install</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CSS-Animated Phone Mockup with Cloned Apps -->
+        <div class="mockup-wrapper reveal-on-scroll">
+          <!-- Floating Satellite Badge 1 -->
+          <div class="floating-card-badge floating-badge-1">
+            <div class="floating-icon-dot">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="floating-text-main">Isolated Sandbox</div>
+              <div class="floating-text-sub">Zero cookie leak</div>
+            </div>
+          </div>
+
+          <!-- Floating Satellite Badge 2 -->
+          <div class="floating-card-badge floating-badge-2">
+            <div class="floating-icon-dot" style="background: linear-gradient(135deg, #10b981, #059669);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <div>
+              <div class="floating-text-main">Dual Active State</div>
+              <div class="floating-text-sub">Instant multi-tasking</div>
+            </div>
+          </div>
+
+          <!-- Phone Chassis -->
+          <div class="phone-device">
+            <!-- Top notch / speaker -->
+            <div class="phone-notch">
+              <div class="notch-camera"></div>
+              <div class="notch-sensor"></div>
+            </div>
+
+            <!-- Phone Screen Content -->
+            <div class="phone-screen">
+              <div class="screen-status-bar">
+                <span>9:41</span>
+                <span>5G · 100%</span>
+              </div>
+
+              <div class="screen-app-header">
+                <div class="screen-app-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2">
+                    <rect x="2" y="2" width="14" height="14" rx="3"></rect>
+                    <rect x="8" y="8" width="14" height="14" rx="3"></rect>
+                  </svg>
+                  <span>SADG Parallel Space</span>
+                </div>
+                <div class="screen-status-badge">PROTECTED</div>
+              </div>
+
+              <!-- Cloned App Icons inside phone -->
+              <div class="screen-clones-grid">
+                <!-- WhatsApp 1 & 2 -->
+                <div class="screen-app-item">
+                  <div class="screen-icon-box whatsapp">
+                    <span class="clone-tag">1</span>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
+                  </div>
+                  <span class="screen-app-name">WhatsApp</span>
+                </div>
+
+                <div class="screen-app-item">
+                  <div class="screen-icon-box whatsapp">
+                    <span class="clone-tag sec">2</span>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
+                  </div>
+                  <span class="screen-app-name">Work WA</span>
+                </div>
+
+                <!-- Instagram Dual -->
+                <div class="screen-app-item">
+                  <div class="screen-icon-box instagram">
+                    <span class="clone-tag">1</span>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                  </div>
+                  <span class="screen-app-name">Insta</span>
+                </div>
+
+                <div class="screen-app-item">
+                  <div class="screen-icon-box instagram">
+                    <span class="clone-tag sec">2</span>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                  </div>
+                  <span class="screen-app-name">Creator IG</span>
+                </div>
+
+                <!-- PUBG / Game Dual -->
+                <div class="screen-app-item">
+                  <div class="screen-icon-box pubg">
+                    <span class="clone-tag sec">2</span>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><polygon points="6 2 18 2 18 6 6 6 6 2"></polygon><rect x="3" y="6" width="18" height="16" rx="2"></rect><circle cx="10" cy="12" r="2"></circle><circle cx="14" cy="12" r="2"></circle></svg>
+                  </div>
+                  <span class="screen-app-name">PUBG Alt</span>
+                </div>
+
+                <!-- TikTok Dual -->
+                <div class="screen-app-item">
+                  <div class="screen-icon-box tiktok">
+                    <span class="clone-tag sec">2</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 3 15.68 6.34 6.34 0 0 0 9.35 22a6.33 6.33 0 0 0 6.33-6.32V10.2a8.3 8.3 0 0 0 4.91 1.6V8.34a4.88 4.88 0 0 1-1-.05z"/></svg>
+                  </div>
+                  <span class="screen-app-name">TikTok Pro</span>
+                </div>
+              </div>
+
+              <!-- Running Dual Split Live Card -->
+              <div class="screen-split-card">
+                <div class="split-header">
+                  <span>ACTIVE PARALLEL ENGINE</span>
+                  <span>60 FPS</span>
+                </div>
+                <div class="split-instances">
+                  <div class="split-instance-box">
+                    <div class="split-instance-title">Instance #1</div>
+                    <div class="split-instance-status">● Personal (Live)</div>
+                  </div>
+                  <div class="split-instance-box active">
+                    <div class="split-instance-title">Instance #2</div>
+                    <div class="split-instance-status">● Sandbox (Live)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         STATS BAR SECTION (with Count-Up Animation)
+         ======================================================================= -->
+    <section class="stats-section" id="stats">
+      <div class="container">
+        <div class="stats-grid">
+          <div class="stat-item reveal-on-scroll">
+            <span class="stat-number" data-target="2000" data-suffix="+">0</span>
+            <span class="stat-label">Apps Supported</span>
+          </div>
+          <div class="stat-item reveal-on-scroll">
+            <span class="stat-number" data-target="10" data-suffix="M+">0</span>
+            <span class="stat-label">Active Users</span>
+          </div>
+          <div class="stat-item reveal-on-scroll">
+            <span class="stat-number" data-target="4.8" data-suffix="★" data-decimal="1">0</span>
+            <span class="stat-label">Rating</span>
+          </div>
+          <div class="stat-item reveal-on-scroll">
+            <span class="stat-number" data-target="100" data-suffix="%">0</span>
+            <span class="stat-label">Data Isolation</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         INTERACTIVE LIVE CLONER SANDBOX DEMO
+         ======================================================================= -->
+    <section id="sandbox" style="padding-top: 60px;">
+      <div class="container">
+        <div class="section-header reveal-on-scroll">
+          <div class="badge-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            Interactive Sandbox Simulator
+          </div>
+          <h2 class="section-title">Test the SADG Cloning Engine</h2>
+          <p class="section-desc">
+            Experience real-time sandbox separation. Switch between simulated apps to see how SADG creates an impenetrable partition between account instances.
+          </p>
+        </div>
+
+        <div class="sandbox-container reveal-on-scroll">
+          <div class="sandbox-header-bar">
+            <div class="sandbox-meta">
+              <span class="sandbox-pill-status">
+                <span class="pulse-dot"></span>
+                Sandbox Kernel Ready
+              </span>
+              <span style="font-size: 13px; color: var(--text-secondary);">Encrypted Partition: AES-256</span>
+            </div>
+            
+            <div style="font-size: 12px; color: var(--text-muted);">
+              Current Environment: <strong style="color: #c084fc;">Chrome PWA Sandbox</strong>
+            </div>
+          </div>
+
+          <!-- App Selector Chips -->
+          <div class="cloner-app-selector" role="tablist" aria-label="Select app to clone">
+            <button class="clone-chip-btn active" data-app="whatsapp">
+              <span>💬</span> WhatsApp
+            </button>
+            <button class="clone-chip-btn" data-app="instagram">
+              <span>📸</span> Instagram
+            </button>
+            <button class="clone-chip-btn" data-app="pubg">
+              <span>🎮</span> PUBG Mobile
+            </button>
+            <button class="clone-chip-btn" data-app="telegram">
+              <span>✈️</span> Telegram
+            </button>
+            <button class="clone-chip-btn" data-app="tiktok">
+              <span>🎵</span> TikTok
+            </button>
+          </div>
+
+          <!-- Dual Instance Comparison -->
+          <div class="sandbox-dual-view">
+            <!-- Instance 1: Primary -->
+            <div class="instance-card">
+              <div class="instance-top">
+                <div class="instance-label">
+                  <span id="inst1Icon">💬</span>
+                  <span id="inst1Title">WhatsApp (Primary)</span>
+                </div>
+                <span class="storage-badge">ID: P-SESSION-001</span>
+              </div>
+              <div class="instance-body">
+                <div class="param-row">
+                  <span class="param-key">Storage Directory:</span>
+                  <span class="param-val" id="inst1Dir">/data/data/com.whatsapp</span>
+                </div>
+                <div class="param-row">
+                  <span class="param-key">Active Identity:</span>
+                  <span class="param-val" id="inst1Account">Personal Phone (+1-555-0198)</span>
+                </div>
+                <div class="param-row">
+                  <span class="param-key">Cache Status:</span>
+                  <span class="param-val">Isolated (14.2 MB)</span>
+                </div>
+                <div class="param-row">
+                  <span class="param-key">Cookie Boundary:</span>
+                  <span class="param-val secure">Enforced Standard</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Instance 2: Cloned Sandbox -->
+            <div class="instance-card clone">
+              <div class="instance-top">
+                <div class="instance-label">
+                  <span id="inst2Icon">💬</span>
+                  <span id="inst2Title" style="color: #c084fc;">WhatsApp (SADG Clone #2)</span>
+                </div>
+                <span class="storage-badge" style="color: #c084fc; border-color: rgba(147, 51, 234, 0.4);">ID: CLONE-SADG-099</span>
+              </div>
+              <div class="instance-body">
+                <div class="param-row">
+                  <span class="param-key">Storage Directory:</span>
+                  <span class="param-val" id="inst2Dir">/sadg/virtual/com.whatsapp_clone2</span>
+                </div>
+                <div class="param-row">
+                  <span class="param-key">Active Identity:</span>
+                  <span class="param-val" id="inst2Account">Work Account (+1-555-0742)</span>
+                </div>
+                <div class="param-row">
+                  <span class="param-key">Zero-Overlap Partition:</span>
+                  <span class="param-val secure">100% Sealed Container</span>
+                </div>
+                <div class="param-row">
+                  <span class="param-key">Stealth Mode:</span>
+                  <span class="param-val secure">Active (Hidden from taskbar)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         2. FEATURES SECTION (3 Cards as requested)
+         ======================================================================= -->
+    <section class="features-section" id="features">
+      <div class="container">
+        <div class="section-header reveal-on-scroll">
+          <div class="badge-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            Engineered For Freedom
+          </div>
+          <h2 class="section-title">Built for Power Users & Gamers</h2>
+          <p class="section-desc">
+            No need to carry two phones or reinstall buggy APK mods. SADG introduces military-grade sandbox isolation directly in your Chrome browser.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Feature Card 1 -->
+          <div class="feature-card reveal-on-scroll">
+            <div class="feature-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <h3 class="feature-title">🔒 Secure Multi-Accounts</h3>
+            <p class="feature-desc">
+              Clone WhatsApp, Instagram, TikTok, games, and 2000+ apps. 100% isolated data with zero overlap.
+            </p>
+          </div>
+
+          <!-- Feature Card 2 -->
+          <div class="feature-card reveal-on-scroll">
+            <div class="feature-icon-box" style="color: #60a5fa; background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.25);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="6 2 18 2 18 6 6 6 6 2"></polygon>
+                <rect x="3" y="6" width="18" height="16" rx="2"></rect>
+                <circle cx="10" cy="12" r="2"></circle>
+                <circle cx="14" cy="12" r="2"></circle>
+              </svg>
+            </div>
+            <h3 class="feature-title">🎮 Dual Gaming Power</h3>
+            <p class="feature-desc">
+              Dominate PUBG, Free Fire, or Genshin Impact with dual accounts — boost resources, strategize, or share devices hassle-free.
+            </p>
+          </div>
+
+          <!-- Feature Card 3 -->
+          <div class="feature-card reveal-on-scroll">
+            <div class="feature-icon-box" style="color: #f59e0b; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.25);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <h3 class="feature-title">⚡ Work-Life Balance Made Easy</h3>
+            <p class="feature-desc">
+              Separate workspaces for personal and professional use. Auto-schedule switches (e.g., mute work apps after hours) and hide sensitive apps in Stealth Mode.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         3. HOW IT WORKS SECTION (3 Steps as requested)
+         ======================================================================= -->
+    <section class="how-it-works-section" id="how-it-works" style="background: rgba(17, 17, 26, 0.25);">
+      <div class="container">
+        <div class="section-header reveal-on-scroll">
+          <div class="badge-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            Quick 3-Step Setup
+          </div>
+          <h2 class="section-title">How It Works</h2>
+          <p class="section-desc">
+            No root, no untrusted third-party APK downloads, and no dangerous system privileges. Get running in 10 seconds.
+          </p>
+        </div>
+
+        <div class="steps-grid">
+          <!-- Step 1 -->
+          <div class="step-card reveal-on-scroll">
+            <div class="step-number-circle">1</div>
+            <h3 class="step-title">Open SADG in Chrome</h3>
+            <p class="step-desc">
+              Launch SADG in Google Chrome on your Android smartphone, tablet, or desktop browser.
+            </p>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="step-card reveal-on-scroll">
+            <div class="step-number-circle">2</div>
+            <h3 class="step-title">Tap "Install" to add to home screen</h3>
+            <p class="step-desc">
+              Tap the instant install button or Chrome's install badge to add SADG as a full standalone app.
+            </p>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="step-card reveal-on-scroll">
+            <div class="step-number-circle">3</div>
+            <h3 class="step-title">Clone apps and run both simultaneously</h3>
+            <p class="step-desc">
+              Select any app from your device, tap Clone, and enjoy separate logins with zero session bleed.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         4. FAQ ACCORDION SECTION (5 Questions as requested)
+         ======================================================================= -->
+    <section class="faq-section" id="faq">
+      <div class="container">
+        <div class="section-header reveal-on-scroll">
+          <div class="badge-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            Clear Answers
+          </div>
+          <h2 class="section-title">Frequently Asked Questions</h2>
+          <p class="section-desc">
+            Everything you need to know about SADG's architecture, security isolation, and multi-account technology.
+          </p>
+        </div>
+
+        <div class="faq-container reveal-on-scroll">
+          <!-- FAQ 1 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>Is my data safe and isolated?</span>
+              <span class="faq-icon-toggle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </span>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                Yes, 100%. SADG leverages client-side sandboxing and partitioned local storage namespaces. Each cloned instance operates in an isolated container where cookies, tokens, databases, and cached sessions are strictly segregated with zero cross-instance leakage.
+              </div>
+            </div>
+          </div>
+
+          <!-- FAQ 2 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>Which apps are supported?</span>
+              <span class="faq-icon-toggle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </span>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                Over 2,000+ applications are supported, including social apps (WhatsApp, Instagram, TikTok, Facebook, Snapchat, Telegram, Discord), productivity tools (Slack, Microsoft Teams, Gmail), and demanding games (PUBG Mobile, Genshin Impact, Free Fire, Roblox).
+              </div>
+            </div>
+          </div>
+
+          <!-- FAQ 3 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>Does SADG drain battery?</span>
+              <span class="faq-icon-toggle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </span>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                No. Traditional APK cloners run heavy background daemon processes that continuously poll the operating system and consume up to 25% extra battery. SADG is a native Progressive Web App that utilizes lightweight web workers and hardware-accelerated rendering, consuming virtually negligible standby battery.
+              </div>
+            </div>
+          </div>
+
+          <!-- FAQ 4 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>Is SADG free to use?</span>
+              <span class="faq-icon-toggle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </span>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                Yes! The core SADG dual-space engine is 100% free with unlimited app cloning for your primary messaging, social, and gaming apps. There are no intrusive pop-up ads or forced subscriptions.
+              </div>
+            </div>
+          </div>
+
+          <!-- FAQ 5 -->
+          <div class="faq-item">
+            <button class="faq-question" aria-expanded="false">
+              <span>Can I hide cloned apps?</span>
+              <span class="faq-icon-toggle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </span>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                Yes. With Stealth Mode enabled, cloned app icons can be hidden from your device’s home screen and recent apps list. You can access hidden instances exclusively from within your secure, PIN-protected SADG parallel space.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         5. INSTALL CTA SECTION
+         ======================================================================= -->
+    <section class="cta-section" id="install-cta">
+      <div class="container">
+        <div class="cta-box reveal-on-scroll">
+          <div class="badge-pill" style="margin-bottom: 20px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Ready In 1 Click
+          </div>
+          <h2 class="cta-title">Start Running Dual Apps Today</h2>
+          <p class="cta-subtext">
+            Install SADG directly to your home screen for instantaneous access, offline support, and full-screen standalone immersion.
+          </p>
+
+          <div class="cta-button-row" id="ctaInstallContainer">
+            <!-- Primary Install Button (Controlled by beforeinstallprompt) -->
+            <button id="ctaInstallBtn" class="btn btn-primary install-trigger-btn" style="padding: 16px 36px; font-size: 16px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Install SADG</span>
+            </button>
+          </div>
+
+          <!-- Dynamic Installed State Container -->
+          <div id="installedStatusContainer" style="display: none; margin-top: 16px;">
+            <div class="install-state-banner">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span id="installedStatusText">SADG is installed ✅ — Open from your home screen</span>
+            </div>
+          </div>
+
+          <!-- Standalone Mode Active State Container -->
+          <div id="standaloneStatusContainer" style="display: none; margin-top: 16px;">
+            <div class="install-state-banner" style="background: rgba(124, 58, 237, 0.2); border-color: rgba(124, 58, 237, 0.5); color: #c084fc;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span>You're all set! Running in standalone PWA mode.</span>
+            </div>
+          </div>
+
+          <!-- iOS Fallback Guide Hint -->
+          <div id="iosFallbackHint" style="display: none;">
+            <div class="ios-install-hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+              <span>On iPhone: tap <strong>Share</strong> → <strong>Add to Home Screen</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- =========================================================================
+       6. FOOTER
+       ========================================================================= -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="#" class="logo">
+            <svg class="logo-icon-svg" viewBox="0 0 32 32" fill="none">
+              <rect x="2" y="2" width="18" height="18" rx="5" fill="#7c3aed" />
+              <rect x="12" y="12" width="18" height="18" rx="5" fill="#6366f1" stroke="#c084fc" stroke-width="1.5" />
+            </svg>
+            <span>SADG<span class="logo-text-gradient">.app</span></span>
+          </a>
+          <p>
+            The world's fastest, zero-APK multi-account cloner built on modern Progressive Web App standards.
+          </p>
+        </div>
+
+        <div class="footer-links-group">
+          <div class="footer-col">
+            <h4>Product</h4>
+            <ul>
+              <li><a href="#features">Features</a></li>
+              <li><a href="#sandbox">Live Demo</a></li>
+              <li><a href="#how-it-works">How It Works</a></li>
+              <li><a href="#faq">FAQ</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col">
+            <h4>Security</h4>
+            <ul>
+              <li><a href="#" onclick="alert('Zero-overlap sandbox: All sessions and token caches remain strictly local to your device.'); return false;">Data Isolation</a></li>
+              <li><a href="#" onclick="alert('Stealth Mode hides cloned instances from app switcher and notification previews.'); return false;">Stealth Mode</a></li>
+              <li><a href="#" onclick="alert('Client encryption ensures no telemetry or credential data is transferred to external servers.'); return false;">Client Encryption</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col">
+            <h4>Legal</h4>
+            <ul>
+              <li><a href="#" onclick="alert('Privacy Policy: SADG respects your privacy. No personal data, chats, or login credentials are ever sent to remote servers.'); return false;">Privacy Policy</a></li>
+              <li><a href="#" onclick="alert('Terms of Service: SADG is provided for personal dual-account management on compatible browser platforms.'); return false;">Terms of Service</a></li>
+              <li><a href="mailto:support@sadg.app">Contact Support</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; <span id="currentYear">2026</span> SADG App Cloner. All rights reserved.</div>
+        <div style="color: var(--text-muted);">Crafted for Google Chrome Mobile & PWA Standalone Mode</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating Back to Top Button -->
+  <button id="backToTopBtn" class="back-to-top" aria-label="Scroll back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+  </button>
+
+  <!-- iOS Installation Guide Modal -->
+  <div id="iosModalBackdrop" class="ios-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="iosModalTitle">
+    <div class="ios-modal-box">
+      <h3 id="iosModalTitle">Install SADG on iPhone & iPad</h3>
+      <p>Apple Safari doesn't allow one-tap web installations, but you can easily add SADG to your home screen:</p>
+      
+      <div class="ios-step-guide">
+        <div class="ios-step-row">
+          <span style="font-weight: 700; color: #c084fc;">1.</span>
+          <span>Tap the <strong>Share</strong> button <svg style="display:inline; vertical-align:middle; width:16px; height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg> in Safari's bottom toolbar.</span>
+        </div>
+        <div class="ios-step-row">
+          <span style="font-weight: 700; color: #c084fc;">2.</span>
+          <span>Scroll down in the action sheet and select <strong>Add to Home Screen</strong>.</span>
+        </div>
+        <div class="ios-step-row">
+          <span style="font-weight: 700; color: #c084fc;">3.</span>
+          <span>Tap <strong>Add</strong> in the top right corner. Enjoy your cloned space!</span>
+        </div>
+      </div>
+
+      <button id="closeIosModalBtn" class="btn btn-secondary" style="width: 100%;">
+        Got It
+      </button>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       VANILLA JAVASCRIPT APPLICATION LOGIC
+       ========================================================================= -->
+  <script>
+    /**
+     * SADG Progressive Web App Client Controller
+     * Zero frameworks, buttery smooth 60fps micro-interactions
+     */
+    (function () {
+      'use strict';
+
+      // Global reference for PWA install prompt event
+      let deferredPrompt = null;
+
+      // DOM Elements
+      const navInstallBtn = document.getElementById('navInstallBtn');
+      const heroInstallBtn = document.getElementById('heroInstallBtn');
+      const ctaInstallBtn = document.getElementById('ctaInstallBtn');
+      const installedStatusContainer = document.getElementById('installedStatusContainer');
+      const installedStatusText = document.getElementById('installedStatusText');
+      const standaloneStatusContainer = document.getElementById('standaloneStatusContainer');
+      const iosFallbackHint = document.getElementById('iosFallbackHint');
+      const backToTopBtn = document.getElementById('backToTopBtn');
+      const iosModalBackdrop = document.getElementById('iosModalBackdrop');
+      const closeIosModalBtn = document.getElementById('closeIosModalBtn');
+      const currentYearEl = document.getElementById('currentYear');
+
+      if (currentYearEl) {
+        currentYearEl.textContent = new Date().getFullYear();
+      }
+
+      // Detect Platform State
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      const isIOS = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+
+      /**
+       * 1. PWA INSTALL LOGIC & LIFECYCLE
+       */
+      function updateInstallUI() {
+        if (isStandalone) {
+          // Running inside installed standalone PWA
+          if (navInstallBtn) navInstallBtn.style.display = 'none';
+          if (heroInstallBtn) heroInstallBtn.style.display = 'none';
+          if (ctaInstallBtn) ctaInstallBtn.style.display = 'none';
+          if (standaloneStatusContainer) standaloneStatusContainer.style.display = 'block';
+          if (installedStatusContainer) installedStatusContainer.style.display = 'none';
+          if (iosFallbackHint) iosFallbackHint.style.display = 'none';
+          return;
+        }
+
+        if (isIOS) {
+          // iOS Safari fallback
+          if (iosFallbackHint) iosFallbackHint.style.display = 'inline-flex';
+          const setIosButtonBehavior = (btn) => {
+            if (!btn) return;
+            btn.onclick = (e) => {
+              e.preventDefault();
+              if (iosModalBackdrop) iosModalBackdrop.classList.add('show');
+            };
+          };
+          setIosButtonBehavior(navInstallBtn);
+          setIosButtonBehavior(heroInstallBtn);
+          setIosButtonBehavior(ctaInstallBtn);
+        }
+      }
+
+      // Check if already installed on page load
+      updateInstallUI();
+
+      // Listen for Chrome beforeinstallprompt
+      window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent default mini-infobar from appearing automatically
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('[SADG PWA] captured beforeinstallprompt event.');
+
+        // Make install buttons active and prominent
+        const installButtons = document.querySelectorAll('.install-trigger-btn');
+        installButtons.forEach((btn) => {
+          btn.style.display = 'inline-flex';
+          btn.onclick = async (event) => {
+            event.preventDefault();
+            if (!deferredPrompt) return;
+
+            // Trigger browser native install sheet
+            deferredPrompt.prompt();
+            const choiceResult = await deferredPrompt.userChoice;
+            console.log('[SADG PWA] User install choice:', choiceResult.outcome);
+
+            if (choiceResult.outcome === 'accepted') {
+              if (installedStatusContainer) {
+                installedStatusContainer.style.display = 'block';
+                if (installedStatusText) {
+                  installedStatusText.textContent = 'SADG is installed ✅ — Open from your home screen';
+                }
+              }
+              if (ctaInstallBtn) ctaInstallBtn.style.display = 'none';
+              if (navInstallBtn) navInstallBtn.style.display = 'none';
+              if (heroInstallBtn) heroInstallBtn.style.display = 'none';
+            }
+            deferredPrompt = null;
+          };
+        });
+      });
+
+      // Listen for successful installation
+      window.addEventListener('appinstalled', (evt) => {
+        console.log('[SADG PWA] Application successfully installed to home screen.');
+        if (installedStatusContainer) {
+          installedStatusContainer.style.display = 'block';
+        }
+        if (ctaInstallBtn) ctaInstallBtn.style.display = 'none';
+        if (navInstallBtn) navInstallBtn.style.display = 'none';
+        if (heroInstallBtn) heroInstallBtn.style.display = 'none';
+      });
+
+      // Close iOS instruction modal
+      if (closeIosModalBtn && iosModalBackdrop) {
+        closeIosModalBtn.onclick = () => iosModalBackdrop.classList.remove('show');
+        iosModalBackdrop.onclick = (e) => {
+          if (e.target === iosModalBackdrop) iosModalBackdrop.classList.remove('show');
+        };
+      }
+
+      /**
+       * 2. STATS COUNT-UP ANIMATION
+       */
+      function initCountUp() {
+        const statElements = document.querySelectorAll('.stat-number');
+        let animated = false;
+
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && !animated) {
+              animated = true;
+              statElements.forEach((el) => {
+                const target = parseFloat(el.getAttribute('data-target') || '0');
+                const suffix = el.getAttribute('data-suffix') || '';
+                const isDecimal = el.getAttribute('data-decimal') === '1';
+                const duration = 1600; // ms
+                const startTime = performance.now();
+
+                function step(currentTime) {
+                  const progress = Math.min((currentTime - startTime) / duration, 1);
+                  // easeOutQuad
+                  const easeProgress = 1 - (1 - progress) * (1 - progress);
+                  const currentVal = target * easeProgress;
+
+                  if (isDecimal) {
+                    el.textContent = currentVal.toFixed(1) + suffix;
+                  } else {
+                    el.textContent = Math.floor(currentVal).toLocaleString() + suffix;
+                  }
+
+                  if (progress < 1) {
+                    requestAnimationFrame(step);
+                  } else {
+                    if (isDecimal) {
+                      el.textContent = target.toFixed(1) + suffix;
+                    } else {
+                      el.textContent = target.toLocaleString() + suffix;
+                    }
+                  }
+                }
+
+                requestAnimationFrame(step);
+              });
+              observer.disconnect();
+            }
+          });
+        }, { threshold: 0.3 });
+
+        const statsSection = document.getElementById('stats');
+        if (statsSection) observer.observe(statsSection);
+      }
+
+      /**
+       * 3. FAQ ACCORDION (Max-height + opacity transition, 300ms ease)
+       */
+      function initFAQ() {
+        const faqItems = document.querySelectorAll('.faq-item');
+        faqItems.forEach((item) => {
+          const questionBtn = item.querySelector('.faq-question');
+          if (!questionBtn) return;
+
+          questionBtn.addEventListener('click', () => {
+            const isActive = item.classList.contains('active');
+
+            // Close other items for single-open elegance
+            faqItems.forEach((other) => {
+              if (other !== item) {
+                other.classList.remove('active');
+                const btn = other.querySelector('.faq-question');
+                if (btn) btn.setAttribute('aria-expanded', 'false');
+              }
+            });
+
+            if (isActive) {
+              item.classList.remove('active');
+              questionBtn.setAttribute('aria-expanded', 'false');
+            } else {
+              item.classList.add('active');
+              questionBtn.setAttribute('aria-expanded', 'true');
+            }
+          });
+        });
+      }
+
+      /**
+       * 4. INTERACTIVE LIVE CLONER SANDBOX SWITCHER
+       */
+      function initSandbox() {
+        const appData = {
+          whatsapp: {
+            icon: '💬',
+            name: 'WhatsApp',
+            inst1: 'Personal Phone (+1-555-0198)',
+            inst2: 'Work Account (+1-555-0742)',
+            dir1: '/data/data/com.whatsapp',
+            dir2: '/sadg/virtual/com.whatsapp_clone2'
+          },
+          instagram: {
+            icon: '📸',
+            name: 'Instagram',
+            inst1: '@personal_traveler (Main)',
+            inst2: '@business_brand_official (Clone)',
+            dir1: '/data/data/com.instagram.android',
+            dir2: '/sadg/virtual/com.instagram_clone2'
+          },
+          pubg: {
+            icon: '🎮',
+            name: 'PUBG Mobile',
+            inst1: 'Ace Tier (Rank Push)',
+            inst2: 'Smurf Alt (Squad Practice)',
+            dir1: '/data/data/com.tencent.ig',
+            dir2: '/sadg/virtual/com.tencent.ig_clone2'
+          },
+          telegram: {
+            icon: '✈️',
+            name: 'Telegram',
+            inst1: 'Private Family Channels',
+            inst2: 'Crypto & Web3 Trading Bots',
+            dir1: '/data/data/org.telegram.messenger',
+            dir2: '/sadg/virtual/org.telegram_clone2'
+          },
+          tiktok: {
+            icon: '🎵',
+            name: 'TikTok',
+            inst1: 'Casual Browsing Feed',
+            inst2: 'Affiliate Creator Studio',
+            dir1: '/data/data/com.zhiliaoapp.musically',
+            dir2: '/sadg/virtual/com.tiktok_clone2'
+          }
+        };
+
+        const chips = document.querySelectorAll('.clone-chip-btn');
+        const inst1Icon = document.getElementById('inst1Icon');
+        const inst2Icon = document.getElementById('inst2Icon');
+        const inst1Title = document.getElementById('inst1Title');
+        const inst2Title = document.getElementById('inst2Title');
+        const inst1Dir = document.getElementById('inst1Dir');
+        const inst2Dir = document.getElementById('inst2Dir');
+        const inst1Account = document.getElementById('inst1Account');
+        const inst2Account = document.getElementById('inst2Account');
+
+        chips.forEach((chip) => {
+          chip.addEventListener('click', () => {
+            chips.forEach((c) => c.classList.remove('active'));
+            chip.classList.add('active');
+
+            const appKey = chip.getAttribute('data-app');
+            const data = appData[appKey];
+            if (!data) return;
+
+            if (inst1Icon) inst1Icon.textContent = data.icon;
+            if (inst2Icon) inst2Icon.textContent = data.icon;
+            if (inst1Title) inst1Title.textContent = `${data.name} (Primary)`;
+            if (inst2Title) inst2Title.textContent = `${data.name} (SADG Clone #2)`;
+            if (inst1Dir) inst1Dir.textContent = data.dir1;
+            if (inst2Dir) inst2Dir.textContent = data.dir2;
+            if (inst1Account) inst1Account.textContent = data.inst1;
+            if (inst2Account) inst2Account.textContent = data.inst2;
+          });
+        });
+      }
+
+      /**
+       * 5. BACK TO TOP BUTTON & SCROLL OBSERVER
+       */
+      function initScrollEffects() {
+        // Back to top appearance after 400px
+        window.addEventListener('scroll', () => {
+          const scrollY = window.scrollY || document.documentElement.scrollTop;
+          if (scrollY > 400) {
+            backToTopBtn.classList.add('show');
+          } else {
+            backToTopBtn.classList.remove('show');
+          }
+        }, { passive: true });
+
+        if (backToTopBtn) {
+          backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        }
+
+        // IntersectionObserver for 60fps fade-in & slide-up (CLS = 0)
+        const revealElements = document.querySelectorAll('.reveal-on-scroll');
+        const revealObserver = new IntersectionObserver((entries, obs) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              obs.unobserve(entry.target);
+            }
+          });
+        }, {
+          threshold: 0.15,
+          rootMargin: '0px 0px -40px 0px'
+        });
+
+        revealElements.forEach((el) => revealObserver.observe(el));
+      }
+
+      // Initialize all modules on DOM ready
+      document.addEventListener('DOMContentLoaded', () => {
+        initCountUp();
+        initFAQ();
+        initSandbox();
+        initScrollEffects();
+      });
+    })();
+  </script>
+
+  <!-- =========================================================================
+       SERVICE WORKER REGISTRATION (At end of body as required)
+       ========================================================================= -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('SW registered:', reg.scope))
+          .catch(err => console.error('SW registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>

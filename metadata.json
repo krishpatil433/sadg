@@ -1,0 +1,6 @@
+{
+  "name": "SADG — Multi App Cloner",
+  "description": "Run multiple instances of any app simultaneously on one device. Installable PWA directly from Chrome with zero APK hassle.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

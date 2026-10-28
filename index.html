@@ -23,7 +23,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="SADG">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="icon" type="image/png" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
 
   <!-- Google Fonts: Inter & Poppins -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2213,6 +2214,33 @@
     </div>
   </div>
 
+  <!-- Android Chrome Manual Guide Modal (Fallback if prompt not yet fired) -->
+  <div id="chromeModalBackdrop" class="ios-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="chromeModalTitle">
+    <div class="ios-modal-box">
+      <h3 id="chromeModalTitle">Install SADG from Chrome</h3>
+      <p>Follow these quick steps to add SADG to your Android home screen:</p>
+      
+      <div class="ios-step-guide">
+        <div class="ios-step-row">
+          <span style="font-weight: 700; color: #c084fc;">1.</span>
+          <span>Tap the <strong>three dots (⋮)</strong> menu in the top-right corner of Chrome.</span>
+        </div>
+        <div class="ios-step-row">
+          <span style="font-weight: 700; color: #c084fc;">2.</span>
+          <span>Select <strong>Install app</strong> (or <strong>Add to Home screen</strong>).</span>
+        </div>
+        <div class="ios-step-row">
+          <span style="font-weight: 700; color: #c084fc;">3.</span>
+          <span>Tap <strong>Install</strong> to confirm. SADG will launch with standalone perks!</span>
+        </div>
+      </div>
+
+      <button id="closeChromeModalBtn" class="btn btn-secondary" style="width: 100%;">
+        Got It
+      </button>
+    </div>
+  </div>
+
   <!-- =========================================================================
        VANILLA JAVASCRIPT APPLICATION LOGIC
        ========================================================================= -->
@@ -2238,6 +2266,8 @@
       const backToTopBtn = document.getElementById('backToTopBtn');
       const iosModalBackdrop = document.getElementById('iosModalBackdrop');
       const closeIosModalBtn = document.getElementById('closeIosModalBtn');
+      const chromeModalBackdrop = document.getElementById('chromeModalBackdrop');
+      const closeChromeModalBtn = document.getElementById('closeChromeModalBtn');
       const currentYearEl = document.getElementById('currentYear');
 
       if (currentYearEl) {
@@ -2251,9 +2281,21 @@
       /**
        * 1. PWA INSTALL LOGIC & LIFECYCLE
        */
+      function showInstalledState() {
+        if (installedStatusContainer) {
+          installedStatusContainer.style.display = 'block';
+          if (installedStatusText) {
+            installedStatusText.textContent = 'SADG is installed ✅ — Open from your home screen';
+          }
+        }
+        if (ctaInstallBtn) ctaInstallBtn.style.display = 'none';
+        if (navInstallBtn) navInstallBtn.style.display = 'none';
+        if (heroInstallBtn) heroInstallBtn.style.display = 'none';
+        if (chromeModalBackdrop) chromeModalBackdrop.classList.remove('show');
+      }
+
       function updateInstallUI() {
         if (isStandalone) {
-          // Running inside installed standalone PWA
           if (navInstallBtn) navInstallBtn.style.display = 'none';
           if (heroInstallBtn) heroInstallBtn.style.display = 'none';
           if (ctaInstallBtn) ctaInstallBtn.style.display = 'none';
@@ -2264,69 +2306,71 @@
         }
 
         if (isIOS) {
-          // iOS Safari fallback
           if (iosFallbackHint) iosFallbackHint.style.display = 'inline-flex';
-          const setIosButtonBehavior = (btn) => {
-            if (!btn) return;
-            btn.onclick = (e) => {
-              e.preventDefault();
-              if (iosModalBackdrop) iosModalBackdrop.classList.add('show');
-            };
-          };
-          setIosButtonBehavior(navInstallBtn);
-          setIosButtonBehavior(heroInstallBtn);
-          setIosButtonBehavior(ctaInstallBtn);
         }
       }
+
+      async function handleInstallClick(e) {
+        if (e) e.preventDefault();
+
+        if (isStandalone) {
+          updateInstallUI();
+          return;
+        }
+
+        if (isIOS) {
+          if (iosModalBackdrop) iosModalBackdrop.classList.add('show');
+          return;
+        }
+
+        if (deferredPrompt) {
+          try {
+            deferredPrompt.prompt();
+            const choiceResult = await deferredPrompt.userChoice;
+            console.log('[SADG PWA] User install choice:', choiceResult.outcome);
+            if (choiceResult.outcome === 'accepted') {
+              showInstalledState();
+            }
+            deferredPrompt = null;
+          } catch (err) {
+            console.error('[SADG PWA] Install prompt error:', err);
+            if (chromeModalBackdrop) chromeModalBackdrop.classList.add('show');
+          }
+        } else {
+          // If deferredPrompt is not yet ready or ambient badge is active, guide the user
+          console.log('[SADG PWA] deferredPrompt not available yet, showing Chrome guide');
+          if (chromeModalBackdrop) chromeModalBackdrop.classList.add('show');
+        }
+      }
+
+      // Bind all install buttons immediately
+      const installButtons = document.querySelectorAll('.install-trigger-btn');
+      installButtons.forEach((btn) => {
+        btn.addEventListener('click', handleInstallClick);
+      });
 
       // Check if already installed on page load
       updateInstallUI();
 
       // Listen for Chrome beforeinstallprompt
       window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent default mini-infobar from appearing automatically
         e.preventDefault();
         deferredPrompt = e;
         console.log('[SADG PWA] captured beforeinstallprompt event.');
 
-        // Make install buttons active and prominent
-        const installButtons = document.querySelectorAll('.install-trigger-btn');
+        // Ensure buttons are active and visible
         installButtons.forEach((btn) => {
-          btn.style.display = 'inline-flex';
-          btn.onclick = async (event) => {
-            event.preventDefault();
-            if (!deferredPrompt) return;
-
-            // Trigger browser native install sheet
-            deferredPrompt.prompt();
-            const choiceResult = await deferredPrompt.userChoice;
-            console.log('[SADG PWA] User install choice:', choiceResult.outcome);
-
-            if (choiceResult.outcome === 'accepted') {
-              if (installedStatusContainer) {
-                installedStatusContainer.style.display = 'block';
-                if (installedStatusText) {
-                  installedStatusText.textContent = 'SADG is installed ✅ — Open from your home screen';
-                }
-              }
-              if (ctaInstallBtn) ctaInstallBtn.style.display = 'none';
-              if (navInstallBtn) navInstallBtn.style.display = 'none';
-              if (heroInstallBtn) heroInstallBtn.style.display = 'none';
-            }
-            deferredPrompt = null;
-          };
+          if (!isStandalone) {
+            btn.style.display = 'inline-flex';
+          }
         });
       });
 
       // Listen for successful installation
-      window.addEventListener('appinstalled', (evt) => {
+      window.addEventListener('appinstalled', () => {
         console.log('[SADG PWA] Application successfully installed to home screen.');
-        if (installedStatusContainer) {
-          installedStatusContainer.style.display = 'block';
-        }
-        if (ctaInstallBtn) ctaInstallBtn.style.display = 'none';
-        if (navInstallBtn) navInstallBtn.style.display = 'none';
-        if (heroInstallBtn) heroInstallBtn.style.display = 'none';
+        deferredPrompt = null;
+        showInstalledState();
       });
 
       // Close iOS instruction modal
@@ -2334,6 +2378,14 @@
         closeIosModalBtn.onclick = () => iosModalBackdrop.classList.remove('show');
         iosModalBackdrop.onclick = (e) => {
           if (e.target === iosModalBackdrop) iosModalBackdrop.classList.remove('show');
+        };
+      }
+
+      // Close Chrome instruction modal
+      if (closeChromeModalBtn && chromeModalBackdrop) {
+        closeChromeModalBtn.onclick = () => chromeModalBackdrop.classList.remove('show');
+        chromeModalBackdrop.onclick = (e) => {
+          if (e.target === chromeModalBackdrop) chromeModalBackdrop.classList.remove('show');
         };
       }
 

@@ -40,7 +40,7 @@ function makeChunk(type, data) {
   return buf;
 }
 
-function generatePng(size) {
+function generatePng(size, isMaskable = false) {
   const width = size;
   const height = size;
   
@@ -56,13 +56,11 @@ function generatePng(size) {
 
   const ihdrChunk = makeChunk('IHDR', ihdr);
 
-  // Raw image data: height rows, each: 1 byte filter (0) + width * 4 bytes RGBA
   const rowSize = 1 + width * 4;
   const rawData = Buffer.alloc(rowSize * height);
 
   const cx = width / 2;
   const cy = height / 2;
-  const radius = width * 0.44;
 
   for (let y = 0; y < height; y++) {
     const rowOffset = y * rowSize;
@@ -71,43 +69,51 @@ function generatePng(size) {
       const pxOffset = rowOffset + 1 + x * 4;
       const dx = x - cx;
       const dy = y - cy;
-      const dist = Math.sqrt(dx * dx + dy * dy);
 
-      // Rounded squircle / box background
-      const cornerRad = width * 0.22;
-      const qx = Math.max(0, Math.abs(dx) - (cx - cornerRad));
-      const qy = Math.max(0, Math.abs(dy) - (cy - cornerRad));
-      const boxDist = Math.sqrt(qx * qx + qy * qy);
+      // For standard ("any"), use a rounded squircle with transparent outside.
+      // For maskable, full-bleed solid background (Android handles the squircle/circle crop).
+      let isInside = true;
+      if (!isMaskable) {
+        const cornerRad = width * 0.22;
+        const qx = Math.max(0, Math.abs(dx) - (cx - cornerRad));
+        const qy = Math.max(0, Math.abs(dy) - (cy - cornerRad));
+        const boxDist = Math.sqrt(qx * qx + qy * qy);
+        if (boxDist > cornerRad) {
+          isInside = false;
+        }
+      }
 
-      if (boxDist > cornerRad) {
-        // Transparent outside rounded icon
+      if (!isInside) {
         rawData[pxOffset] = 0;
         rawData[pxOffset + 1] = 0;
         rawData[pxOffset + 2] = 0;
         rawData[pxOffset + 3] = 0;
       } else {
-        // Gradient from Deep Violet #6366f1 to Vibrant Purple #a855f7
+        // Gradient background from Deep Violet #6366f1 to Vibrant Purple #a855f7
         const t = (x + y) / (width + height);
         const r = Math.round(108 + t * 65);
         const g = Math.round(40 + t * 40);
         const b = Math.round(217 + t * 30);
         
-        // Inner glyph: dual overlapping squares / clone symbol
-        // Main square 1: centered left-top
-        const inSq1 = Math.abs(x - (cx - size * 0.08)) < size * 0.2 && Math.abs(y - (cy - size * 0.08)) < size * 0.2;
-        // Clone square 2: centered right-bottom
-        const inSq2 = Math.abs(x - (cx + size * 0.08)) < size * 0.2 && Math.abs(y - (cy + size * 0.08)) < size * 0.2;
+        // Inner glyph: dual overlapping squares (cloning symbol)
+        // Kept within the 80% safe zone for maskable compatibility
+        const glyphScale = isMaskable ? 0.72 : 0.85;
+        const sqSize = size * 0.18 * glyphScale;
+        const offset = size * 0.075 * glyphScale;
+
+        const inSq1 = Math.abs(x - (cx - offset)) < sqSize && Math.abs(y - (cy - offset)) < sqSize;
+        const inSq2 = Math.abs(x - (cx + offset)) < sqSize && Math.abs(y - (cy + offset)) < sqSize;
         
-        const isBorder1 = inSq1 && (Math.abs(Math.abs(x - (cx - size * 0.08)) - size * 0.2) < size * 0.035 || Math.abs(Math.abs(y - (cy - size * 0.08)) - size * 0.2) < size * 0.035);
-        const isBorder2 = inSq2 && (Math.abs(Math.abs(x - (cx + size * 0.08)) - size * 0.2) < size * 0.035 || Math.abs(Math.abs(y - (cy + size * 0.08)) - size * 0.2) < size * 0.035);
+        const strokeW = Math.max(2, size * 0.03 * glyphScale);
+        const isBorder1 = inSq1 && (Math.abs(Math.abs(x - (cx - offset)) - sqSize) < strokeW || Math.abs(Math.abs(y - (cy - offset)) - sqSize) < strokeW);
+        const isBorder2 = inSq2 && (Math.abs(Math.abs(x - (cx + offset)) - sqSize) < strokeW || Math.abs(Math.abs(y - (cy + offset)) - sqSize) < strokeW);
 
         if (isBorder2 || isBorder1) {
           rawData[pxOffset] = 255;
           rawData[pxOffset + 1] = 255;
           rawData[pxOffset + 2] = 255;
-          rawData[pxOffset + 3] = 245;
+          rawData[pxOffset + 3] = 255;
         } else if (inSq2) {
-          // slight bright overlay for secondary app
           rawData[pxOffset] = Math.min(255, r + 45);
           rawData[pxOffset + 1] = Math.min(255, g + 40);
           rawData[pxOffset + 2] = 255;
@@ -136,8 +142,15 @@ dirs.forEach(d => {
 });
 
 [192, 512].forEach(size => {
-  const png = generatePng(size);
-  fs.writeFileSync(`/icons/icon-${size}.png`, png);
-  fs.writeFileSync(`/public/icons/icon-${size}.png`, png);
-  console.log(`Generated icon-${size}.png in /icons and /public/icons`);
+  // Standard any icon
+  const pngAny = generatePng(size, false);
+  fs.writeFileSync(`/icons/icon-${size}.png`, pngAny);
+  fs.writeFileSync(`/public/icons/icon-${size}.png`, pngAny);
+  console.log(`Generated icon-${size}.png (purpose: any)`);
+
+  // Maskable icon
+  const pngMaskable = generatePng(size, true);
+  fs.writeFileSync(`/icons/icon-${size}-maskable.png`, pngMaskable);
+  fs.writeFileSync(`/public/icons/icon-${size}-maskable.png`, pngMaskable);
+  console.log(`Generated icon-${size}-maskable.png (purpose: maskable)`);
 });

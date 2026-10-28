@@ -1,10 +1,10 @@
 /**
  * SADG PWA Service Worker
  * Cache Strategy: Cache-First for static assets, Network-First fallback, Offline page for navigation
- * Cache Name: sadg-v1
+ * Cache Name: sadg-v2
  */
 
-const CACHE_NAME = 'sadg-v1';
+const CACHE_NAME = 'sadg-v2';
 
 // Pre-cache core application shell and offline assets
 const PRECACHE_ASSETS = [
@@ -13,7 +13,9 @@ const PRECACHE_ASSETS = [
   '/offline.html',
   '/manifest.json',
   '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/icons/icon-512.png',
+  '/icons/icon-192-maskable.png',
+  '/icons/icon-512-maskable.png'
 ];
 
 /**
@@ -35,7 +37,7 @@ self.addEventListener('install', (event) => {
 
 /**
  * Activate Event:
- * Deletes older cache versions and claims active clients right away
+ * Deletes older cache versions (like sadg-v1) and claims active clients right away
  */
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -73,7 +75,6 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((networkResponse) => {
-          // If network succeeds, optionally cache this response
           if (networkResponse && networkResponse.status === 200) {
             const responseClone = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
@@ -83,7 +84,6 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(() => {
-          // If network is down, serve cached request or fallback to offline.html
           return caches.match(request).then((cachedResponse) => {
             if (cachedResponse) {
               return cachedResponse;
@@ -99,13 +99,10 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Return cached version immediately
         return cachedResponse;
       }
 
-      // If not in cache, fetch from network
       return fetch(request).then((networkResponse) => {
-        // Cache valid response clones for subsequent visits
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -114,7 +111,6 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       }).catch((fetchError) => {
-        // If image or asset request fails while offline, return nothing or placeholder
         console.warn('[SW] Fetch failed for:', request.url, fetchError);
       });
     })

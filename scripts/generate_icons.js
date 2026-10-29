@@ -136,7 +136,7 @@ function generatePng(size, isMaskable = false) {
   return Buffer.concat([signature, ihdrChunk, idatChunk, iendChunk]);
 }
 
-const dirs = ['/icons', '/public/icons'];
+const dirs = ['./icons', './public/icons'];
 dirs.forEach(d => {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 });
@@ -144,13 +144,13 @@ dirs.forEach(d => {
 [192, 512].forEach(size => {
   // Standard any icon
   const pngAny = generatePng(size, false);
-  fs.writeFileSync(`/icons/icon-${size}.png`, pngAny);
-  fs.writeFileSync(`/public/icons/icon-${size}.png`, pngAny);
+  fs.writeFileSync(`./icons/icon-${size}.png`, pngAny);
+  fs.writeFileSync(`./public/icons/icon-${size}.png`, pngAny);
   console.log(`Generated icon-${size}.png (purpose: any)`);
 
   // Maskable icon
   const pngMaskable = generatePng(size, true);
-  fs.writeFileSync(`/icons/icon-${size}-maskable.png`, pngMaskable);
-  fs.writeFileSync(`/public/icons/icon-${size}-maskable.png`, pngMaskable);
+  fs.writeFileSync(`./icons/icon-${size}-maskable.png`, pngMaskable);
+  fs.writeFileSync(`./public/icons/icon-${size}-maskable.png`, pngMaskable);
   console.log(`Generated icon-${size}-maskable.png (purpose: maskable)`);
 });
